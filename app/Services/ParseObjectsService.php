@@ -57,7 +57,7 @@ class ParseObjectsService
                 "toInspectionDate" => null,
                 "fromEventDate" => null,
                 "toEventDate" => null,
-                "abandonedObjectTypeId" => 1,
+                "abandonedObjectTypeId" => AbandonedObjectTypeEnum::HOUSE->value,
                 "stateTypeId" => 15,
                 "stateGroupId" => 2,
                 "stateSearchCategoryId" => 1,

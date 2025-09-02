@@ -23,7 +23,7 @@ class ParseObjects extends Command
      *
      * @var string
      */
-    protected $signature = 'parse {--type=2} {--state=15}';
+    protected $signature = 'parse {--type=} {--state=15}';
 
     /**
      * The console command description.
@@ -37,7 +37,7 @@ class ParseObjects extends Command
      */
     public function handle(): void
     {
-        $type = (int) $this->option('type');
+        $type = (int) ($this->option('type') ?? AbandonedObjectTypeEnum::LAND_PLOT->value);
         $sateId = (int) $this->option('state');
 
         $this->info("Запрашиваю данные для типа #".AbandonedObjectTypeEnum::from($type)->label()." в статусе #".ObjectStateEnum::from($sateId)->label()."...");
