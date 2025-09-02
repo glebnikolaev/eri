@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AbandonedObjectTypeEnum;
 use App\Models\AbandonedObject;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -9,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class InvestmentBordersSyncService
 {
     /**
-     * Пробегает по объектам (type=2), тянет borders и сохраняет.
+     * Пробегает по объектам (type=LAND_PLOT), тянет borders и сохраняет.
      * @param bool $onlyMissing  true — обновлять только у тех, где borders = null
      * @param int|null $limit    лимит обработанных записей за запуск (null = без лимита)
      * @return array{processed:int, updated:int, skipped:int, failed:int}
@@ -17,7 +18,7 @@ class InvestmentBordersSyncService
     public function sync(bool $onlyMissing = true, ?int $limit = null): array
     {
         $query = AbandonedObject::query()
-            ->where('type', 2)
+            ->where('type', AbandonedObjectTypeEnum::LAND_PLOT->value)
             ->when($onlyMissing, fn ($q) => $q->whereNull('borders'));
 
         $processed = $updated = $skipped = $failed = 0;

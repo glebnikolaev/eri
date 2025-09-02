@@ -39,7 +39,7 @@ class GeoCoder extends Command
      */
     public function handle(): void
     {
-        AbandonedObject::where('type', 1)
+        AbandonedObject::where('type', AbandonedObjectTypeEnum::HOUSE->value)
             ->whereNull('coords')
             ->whereNotNull('address')
             ->chunk(200, function ($objects) {

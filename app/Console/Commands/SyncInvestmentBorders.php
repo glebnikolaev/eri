@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\AbandonedObjectTypeEnum;
 use Illuminate\Console\Command;
 use App\Services\InvestmentBordersSyncService;
 
@@ -11,7 +12,13 @@ class SyncInvestmentBorders extends Command
                             {--all : Обновлять все (включая те, где borders уже заполнено)}
                             {--limit= : Лимит записей за запуск}';
 
-    protected $description = 'Синхронизация borders для инвест-объектов (type=2) из ERI2 API';
+    protected $description;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->description = 'Синхронизация borders для инвест-объектов (type=' . AbandonedObjectTypeEnum::LAND_PLOT->value . ') из ERI2 API';
+    }
 
     public function handle(InvestmentBordersSyncService $service): int
     {
@@ -19,7 +26,8 @@ class SyncInvestmentBorders extends Command
         $limit = $this->option('limit') ? (int)$this->option('limit') : null;
 
         $this->info(sprintf(
-            'Старт: type=2, onlyMissing=%s, limit=%s',
+            'Старт: type=%d, onlyMissing=%s, limit=%s',
+            AbandonedObjectTypeEnum::LAND_PLOT->value,
             $onlyMissing ? 'true' : 'false',
             $limit ?? '—'
         ));
