@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Загружаем полный пакет модулей; при желании добавь свой apikey=... -->
     <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&load=package.full" type="text/javascript"></script>
+    @vite('resources/js/map.js')
     <style>
         html, body, #map { width:100%; height:100vh; margin:0; padding:0; }
         .map-loader { position: fixed; inset: 0; display:flex; align-items:center; justify-content:center; background:#fff; font:14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial; }
@@ -22,15 +23,13 @@
     </style>
 </head>
 <body>
-<div id="map"></div>
+<div id="map" data-type="plot"></div>
 <div id="loader" class="map-loader">Загружаю участки…</div>
 <div id="err" class="error" style="display:none"></div>
 
-<script>
+<script type="module">
 // 👇 Если у тебя без префикса /api — замени на '/objects/2'
-const LIST_API_URL = '/api/objects/2';
-const ERI_BASE = 'https://eri2.nca.by';
-const detailsCache = new Map();
+const { fetchObjects, loadDetails, fmtMs, escapeHtml } = window.mapUtils;
 
 // Показываем ошибку пользователю
 function showError(msg) {
@@ -46,44 +45,8 @@ function ensureYmapsCore() {
 }
 
 // -------- API helpers --------
-async function fetchObjects() {
-    const res = await fetch(LIST_API_URL, { headers: { 'Accept':'application/json' }});
-    if (!res.ok) throw new Error('API /objects/2: ' + res.status);
-    return await res.json();
-}
-
-async function loadDetails(eriId) {
-    if (detailsCache.has(eriId)) return detailsCache.get(eriId);
-
-    const url = `${ERI_BASE}/api/guest/investmentObject/${encodeURIComponent(eriId)}/forView`;
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json, text/plain, */*',
-            'Content-Type': 'application/json'
-        },
-        body: '{}' // пустое JSON-тело
-    });
-    if (!res.ok) throw new Error('ERI error: ' + res.status);
-    const json = await res.json();
-    const data = json?.data ?? {};
-    detailsCache.set(eriId, data);
-    return data;
-}
 
 // -------- utils --------
-function escapeHtml(s) {
-    if (s == null) return '';
-    return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;')
-        .replaceAll('>','&gt;').replaceAll('"','&quot;')
-        .replaceAll("'",'&#039;');
-}
-function fmtMs(ms) {
-    if (!ms && ms !== 0) return '-';
-    const d = new Date(Number(ms));
-    const pad = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
 function normalizeRing(ring) {
     const out = [];
     for (const p of (ring || [])) {
@@ -172,9 +135,11 @@ async function init() {
     });
 
     const loader = document.getElementById('loader');
+    const dataType = document.getElementById('map').dataset.type;
+    const listUrl = (dataType === 'plot') ? '/api/objects/2' : '/api/objects';
 
     try {
-        const objects = await fetchObjects(); // [{ id,type,address,coords,eri_id,borders,... }, ...]
+        const objects = await fetchObjects(dataType); // [{ id,type,address,coords,eri_id,borders,... }, ...]
         const collection = new ymaps.GeoObjectCollection();
 
         for (const obj of (objects || [])) {
@@ -208,7 +173,7 @@ async function init() {
                     polygon.balloon.open(clickCoords);
 
                     try {
-                        const data = await loadDetails(obj.eri_id);
+                        const data = await loadDetails(dataType, obj.eri_id);
                         const html = renderInvestmentBalloon(data, { eri_id: obj.eri_id, address: obj.address });
                         polygon.properties.set('balloonContent', html);
                     } catch (err) {
@@ -230,7 +195,7 @@ async function init() {
         }
     } catch (e) {
         console.error(e);
-        showError('Не удалось загрузить список участков. Проверь API ' + LIST_API_URL);
+        showError('Не удалось загрузить список участков. Проверь API ' + listUrl);
     } finally {
         loader.classList.add('hidden');
     }

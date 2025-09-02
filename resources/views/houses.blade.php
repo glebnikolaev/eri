@@ -4,6 +4,7 @@
     <title>Карта объектов</title>
     <meta charset="utf-8" />
     <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU" type="text/javascript"></script>
+    @vite('resources/js/map.js')
     <style>
         html, body, #map { width:100%; height:100vh; margin:0; padding:0; }
         .map-loader { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: #fff; }
@@ -21,33 +22,13 @@
     </style>
 </head>
 <body>
-<div id="map"></div>
+<div id="map" data-type="house"></div>
 <div id="loader" class="map-loader">Загружаю объекты…</div>
 
-<script>
+<script type="module">
 ymaps.ready(init);
 
-async function fetchObjects() {
-    const res = await fetch('/api/objects', { headers: { 'Accept': 'application/json' }});
-    if (!res.ok) throw new Error('API error: ' + res.status);
-    return await res.json();
-}
-
-// Кэш подробностей, чтобы не дергать внешний API повторно
-const detailsCache = new Map();
-const ERI_BASE = 'https://eri2.nca.by';
-
-function typeLabel(type) {
-    return (Number(type) === 2) ? 'Земельный участок' : 'Дом';
-}
-
-// Формат миллисекунд в YYYY-MM-DD HH:mm:ss (локально, без таймзоны сервера)
-function fmtMs(ms) {
-    if (!ms && ms !== 0) return '-';
-    const d = new Date(Number(ms));
-    const pad = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
+const { fetchObjects, loadDetails, typeLabel, fmtMs, escapeHtml, baseUrl } = window.mapUtils;
 
 function renderBalloon(details, fallback) {
     const d = details || {};
@@ -62,7 +43,7 @@ function renderBalloon(details, fallback) {
     const parcel = Array.isArray(d.parcels) ? (d.parcels.find(p => p.main) || d.parcels[0]) : null;
 
     const imgPath = (Array.isArray(d.images) && d.images.length) ? d.images[0].path : null;
-    const imgUrl = imgPath ? `${ERI_BASE}/api/images/abandonedObject/${imgPath}` : null;
+    const imgUrl = imgPath ? `${baseUrl}/api/images/abandonedObject/${imgPath}` : null;
 
     return `
             <div class="balloon">
@@ -86,36 +67,6 @@ function renderBalloon(details, fallback) {
         `;
 }
 
-function escapeHtml(s) {
-    if (s == null) return '';
-    return String(s)
-        .replaceAll('&','&amp;')
-        .replaceAll('<','&lt;')
-        .replaceAll('>','&gt;')
-        .replaceAll('"','&quot;')
-        .replaceAll("'",'&#039;');
-}
-
-async function loadDetails(eriId) {
-    if (detailsCache.has(eriId)) return detailsCache.get(eriId);
-
-    const url = `${ERI_BASE}/api/guest/abandonedObject/${encodeURIComponent(eriId)}/forView`;
-    const res = await fetch(url, {
-        method: 'POST',                 // как ты и указал: POST
-        headers: {
-            'Accept': 'application/json, text/plain, */*',
-            'Content-Type': 'application/json'
-        },
-        body: '{}'                      // тело пустое; оставляем JSON
-    });
-
-    if (!res.ok) throw new Error('ERI API error: ' + res.status);
-    const json = await res.json();
-    const data = json?.data ?? json ?? {};
-    detailsCache.set(eriId, data);
-    return data;
-}
-
 async function init() {
     const map = new ymaps.Map("map", {
         center: [53.9, 27.5667], // Минск по умолчанию
@@ -124,8 +75,9 @@ async function init() {
     });
 
     const loader = document.getElementById('loader');
+    const dataType = document.getElementById('map').dataset.type;
     try {
-        const data = await fetchObjects();
+        const data = await fetchObjects(dataType);
 
         const clusterer = new ymaps.Clusterer({
             groupByCoordinates: false,
@@ -164,7 +116,7 @@ async function init() {
                 loaded = true;
 
                 try {
-                    const details = await loadDetails(obj.eri_id);
+                    const details = await loadDetails(dataType, obj.eri_id);
                     const html = renderBalloon(details, { type: obj.type, address: obj.address, eri_id: obj.eri_id });
                     placemark.properties.set('balloonContent', html);
                 } catch (e) {
