@@ -59,10 +59,11 @@ function renderBalloon(details, fallback) {
                     <tr><td>Этажность</td><td>${d.floorCount ?? '-'}${d.undergroundFloorCount ? ` (подземных: ${d.undergroundFloorCount})` : ''}</td></tr>
                     <tr><td>Дата обследования</td><td>${fmtMs(d.inspectionDate)}</td></tr>
                     ${state ? `<tr><td>Статус</td><td>${escapeHtml(state.abandonedObjectStateType)} (${fmtMs(state.stateDate)})</td></tr>` : ''}
+                    ${state ? `<tr><td>Цена</td><td>${escapeHtml(state.moneyAmount)} </td></tr>` : ''}
                     ${parcel ? `<tr><td>Участок</td><td>${parcel.square ?? '-'} га — ${escapeHtml(parcel.purpose || '-')}</td></tr>` : ''}
                     ${Array.isArray(d.contacts) && d.contacts.length ? `<tr><td>Контакты</td><td>${escapeHtml(d.contacts[0].name || '')}${d.contacts[0].phone ? `, ${escapeHtml(d.contacts[0].phone)}` : ''}${d.contacts[0].email ? `, ${escapeHtml(d.contacts[0].email)}` : ''}</td></tr>` : ''}
                 </table>
-                <div class="muted" style="margin-top:6px">ERI ID: ${escapeHtml(String(fallback?.eri_id || d.id || '—'))}</div>
+                <div class="muted" style="margin-top:6px"><a target="_blank" href="https://eri2.nca.by/guest/abandonedObject/${escapeHtml(String(fallback?.eri_id || d.id || '—'))}#main">ERI ID: ${escapeHtml(String(fallback?.eri_id || d.id || '—'))}</a></div>
             </div>
         `;
 }

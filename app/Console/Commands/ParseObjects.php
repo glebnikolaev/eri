@@ -58,6 +58,7 @@ class ParseObjects extends Command
             $this->info("Получено записей:" . count($data));
 
             $result = array_merge($data, $result);
+            sleep(3);
         }
 
         $this->info("Получено записей всего:" . count($result));

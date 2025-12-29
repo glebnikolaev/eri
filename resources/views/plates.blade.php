@@ -89,7 +89,7 @@ function renderInvestmentBalloon(data, fallback) {
                 <h4>${escapeHtml(title)}</h4>
                 ${addr ? `<div class="muted">${escapeHtml(addr)}</div>` : ''}
                 <table>
-                    <tr><td>ERI ID</td><td>${escapeHtml(String(fallback?.eri_id ?? d.id ?? '—'))}</td></tr>
+                    <tr><td>ERI ID</td><td><a target="_blank" href="https://eri2.nca.by/guest/investmentObject/${escapeHtml(String(fallback?.eri_id || d.id || '—'))}#main">${escapeHtml(String(fallback?.eri_id ?? d.id ?? '—'))}</a></td></tr>
                     <tr><td>Кадастр</td><td>${escapeHtml(d.cadNum ?? '-')}</td></tr>
                     <tr><td>Площадь</td><td>${d.square ?? '-'} ${d.square ? 'га' : ''}</td></tr>
                     <tr><td>Назначение</td><td>${escapeHtml(d.purpose ?? d.purposeUseRemark ?? '-')}</td></tr>

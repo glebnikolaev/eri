@@ -51,7 +51,7 @@ class InvestmentBordersSyncService
                     $updated++;
 
                     // (опционально) не лупить API слишком быстро
-                    usleep(150 * 1000);
+                    sleep(1);
                 } catch (\Throwable $e) {
                     $failed++;
                     Log::warning('Borders sync failed', [
